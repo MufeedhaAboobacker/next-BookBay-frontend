@@ -86,6 +86,7 @@ const BuyerDashboard = () => {
     localStorage.removeItem('bookbay_user');
     localStorage.removeItem('bookbay_token');
     router.push('/login');
+   
   };
 
   return (

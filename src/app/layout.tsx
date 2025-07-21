@@ -1,4 +1,3 @@
-// app/layout.tsx (server component)
 import '../styles/global.css';
 import BackButton from '@/components/BackButton';
 import type { Metadata } from 'next';

@@ -7,10 +7,9 @@ const Home = () => {
 
   return (
     <div className="relative min-h-screen flex items-center justify-center px-4 overflow-hidden">
-  {/* Background Layer with Image + Overlay */}
+  
   <div className="absolute inset-0 bg-[url('/bgg.jpeg')] bg-cover bg-center before:absolute before:inset-0 before:bg-black before:bg-opacity-50 z-0"></div>
 
-  {/* Content */}
   <div className="relative z-10 bg-black bg-opacity-10 shadow-2xl rounded-2xl p-10 max-w-xl w-full text-center">
     <h1 className="text-4xl font-extrabold text-white mb-4">Welcome to BookBay</h1>
     <p className="text-gray-200 text-lg mb-6">Your favorite online book marketplace</p>
