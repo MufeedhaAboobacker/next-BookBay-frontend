@@ -27,6 +27,8 @@ const SellerDashboard = () => {
       const token = localStorage.getItem('bookbay_token');
       const userData = JSON.parse(localStorage.getItem('bookbay_user') || '{}');
 
+
+
       if (!token || userData?.role !== 'seller') {
         alert('Unauthorized. Please login as a seller.');
         router.push('/login');
@@ -68,11 +70,31 @@ const SellerDashboard = () => {
   };
 
   const handleView = (id: string) => router.push(`/books/${id}`);
-  const handleLogout = () => {
-    localStorage.removeItem('bookbay_user');
-    localStorage.removeItem('bookbay_token');
-    router.push('/login');
-  };
+  // const handleLogout = () => {
+  //   localStorage.removeItem('bookbay_user');
+  //   localStorage.removeItem('bookbay_token');
+  //   router.push('/login');
+  // };
+
+  const handleLogout = async () => {
+      try {
+        // Call server to clear cookies
+        await fetch('/api/auth/clear-cookies', {
+          method: 'POST',
+        });
+      } catch (err) {
+        console.error('Failed to clear cookies:', err);
+      }
+
+      // Clear localStorage
+      localStorage.removeItem('bookbay_user');
+      localStorage.removeItem('bookbay_token');
+
+      // Redirect
+      window.location.href = '/login';
+    };
+
+
   const handleViewProfile = () => router.push('/profile');
 
   return (

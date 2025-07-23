@@ -112,6 +112,7 @@ const AddBookPage = () => {
     } catch (err: any) {
       console.error('Error adding book:', err);
       alert(err?.response?.data?.message || 'Something went wrong');
+        router.push('/unauthorized');
     }
   };
 

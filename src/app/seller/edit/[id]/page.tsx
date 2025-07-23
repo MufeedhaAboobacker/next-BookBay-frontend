@@ -147,6 +147,7 @@ const EditBookPage = () => {
       router.push('/seller');
     } catch (error) {
       alert('Failed to update book');
+        router.push('/unauthorized');
     }
   };
 

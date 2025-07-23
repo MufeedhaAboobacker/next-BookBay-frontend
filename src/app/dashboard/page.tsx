@@ -82,12 +82,31 @@ const BuyerDashboard = () => {
     router.push(`/books/${id}`);
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('bookbay_user');
-    localStorage.removeItem('bookbay_token');
-    router.push('/login');
+  // const handleLogout = () => {
+  //   localStorage.removeItem('bookbay_user');
+  //   localStorage.removeItem('bookbay_token');
+  //   router.push('/login');
    
-  };
+  // };
+
+  const handleLogout = async () => {
+      try {
+        // Call server to clear cookies
+        await fetch('/api/auth/clear-cookies', {
+          method: 'POST',
+        });
+      } catch (err) {
+        console.error('Failed to clear cookies:', err);
+      }
+
+      // Clear localStorage
+      localStorage.removeItem('bookbay_user');
+      localStorage.removeItem('bookbay_token');
+
+      // Redirect
+      window.location.href = '/login';
+    };
+
 
   return (
     <div

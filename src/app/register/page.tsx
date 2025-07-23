@@ -53,12 +53,56 @@ const RegisterPage = () => {
     }
   };
 
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  // const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+  //   e.preventDefault();
 
-    try {
-      await schema.validate(form, { abortEarly: false });
-      setErrors({}); // clear previous errors
+  //   try {
+  //     await schema.validate(form, { abortEarly: false });
+  //     setErrors({}); // clear previous errors
+
+  //     const data = new FormData();
+  //     data.append('name', form.name);
+  //     data.append('email', form.email);
+  //     data.append('password', form.password);
+  //     data.append('role', form.role);
+  //     if (form.image) {
+  //       data.append('image', form.image);
+  //     }
+
+  //     const res = await api.post('/auth/register', data);
+  //     const { token, data: user } = res.data;
+
+  //     localStorage.setItem('bookbay_token', token);
+  //     localStorage.setItem('bookbay_user', JSON.stringify(user));
+  //     localStorage.setItem('role', user.role);
+
+  //     alert('Registration successful!');
+  //     router.push(user.role === 'seller' ? '/seller' : '/dashboard');
+  //   } catch (err: any) {
+  //     if (err.name === 'ValidationError') {
+  //       const errorMap: { [key: string]: string } = {};
+  //       err.inner.forEach((error: yup.ValidationError) => {
+  //         if (error.path) errorMap[error.path] = error.message;
+  //       });
+  //       setErrors(errorMap);
+  //     } else {
+  //       const message =
+  //         err?.response?.data?.message ||
+  //         err?.response?.data?.error ||
+  //         'Registration failed!';
+  //       alert(message);
+  //       console.log('Error Response:', err?.response?.data);
+  //     }
+  //   }
+  // };
+
+  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+   e.preventDefault();
+
+  // Validate form with Yup
+  schema.validate(form, { abortEarly: false })
+    .then(() => {
+      setErrors({}); 
 
       const data = new FormData();
       data.append('name', form.name);
@@ -69,32 +113,54 @@ const RegisterPage = () => {
         data.append('image', form.image);
       }
 
-      const res = await api.post('/auth/register', data);
+      // API call
+      return api.post('/auth/register', data);
+    })
+    .then((res) => {
       const { token, data: user } = res.data;
 
+      // Store in localStorage
       localStorage.setItem('bookbay_token', token);
       localStorage.setItem('bookbay_user', JSON.stringify(user));
       localStorage.setItem('role', user.role);
 
-      alert('Registration successful!');
-      router.push(user.role === 'seller' ? '/seller' : '/dashboard');
-    } catch (err: any) {
+      // Set cookies via internal API
+      return fetch('/api/auth/set-cookies', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ token, role: user.role }),
+      }).then((cookieRes) => {
+        if (!cookieRes.ok) {
+          throw new Error('Failed to set cookies');
+        }
+
+        alert('Registration successful!');
+        router.push(user.role === 'seller' ? '/seller' : '/dashboard');
+      });
+    })
+    .catch((err) => {
       if (err.name === 'ValidationError') {
         const errorMap: { [key: string]: string } = {};
         err.inner.forEach((error: yup.ValidationError) => {
-          if (error.path) errorMap[error.path] = error.message;
+          if (error.path) {
+            errorMap[error.path] = error.message;
+          }
         });
         setErrors(errorMap);
       } else {
+        console.error('Registration error:', err);
         const message =
           err?.response?.data?.message ||
           err?.response?.data?.error ||
+          err?.message ||
           'Registration failed!';
         alert(message);
-        console.log('Error Response:', err?.response?.data);
       }
-    }
-  };
+    });
+};
+
 
   return (
    <div className="relative min-h-screen flex items-center justify-center px-4 overflow-hidden">

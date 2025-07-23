@@ -51,6 +51,7 @@ const EditProfilePage = () => {
       } catch (err) {
         console.error('Failed to load profile:', err);
         alert('Failed to load profile');
+          router.push('/unauthorized');
       }
     };
 
