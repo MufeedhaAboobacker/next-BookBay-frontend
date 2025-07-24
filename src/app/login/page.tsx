@@ -61,9 +61,7 @@ const LoginPage = () => {
       alert(msg);
     }
   };
-
-
-
+  
   return (
     <div className="relative min-h-screen flex items-center justify-center px-4 overflow-hidden">
       {/* Background image with opacity */}

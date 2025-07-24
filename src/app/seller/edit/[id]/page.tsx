@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, ChangeEvent } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import Image from 'next/image';
 import {
   Box,
   Button,
@@ -147,7 +148,7 @@ const EditBookPage = () => {
       router.push('/seller');
     } catch (error) {
       alert('Failed to update book');
-        router.push('/unauthorized');
+      router.push('/unauthorized');
     }
   };
 
@@ -223,10 +224,9 @@ const EditBookPage = () => {
                       )}
                     />
                   </Grid>
-                  
                 ))}
 
-                 <Grid item xs={12} md={6}>
+                <Grid item xs={12} md={6}>
                   <FormControl fullWidth variant="filled" error={!!errors.category}>
                     <InputLabel sx={{ color: '#aaa' }}>Category</InputLabel>
                     <Controller
@@ -271,30 +271,6 @@ const EditBookPage = () => {
                   />
                 </Grid>
 
-                {/* <Grid item xs={12} md={6}>
-                  <FormControl fullWidth variant="filled" error={!!errors.category}>
-                    <InputLabel sx={{ color: '#aaa' }}>Category</InputLabel>
-                    <Controller
-                      name="category"
-                      control={control}
-                      render={({ field }) => (
-                        <Select {...field} sx={{ color: 'white' }}>
-                          {categories.map((cat) => (
-                            <MenuItem key={cat} value={cat}>
-                              {cat}
-                            </MenuItem>
-                          ))}
-                        </Select>
-                      )}
-                    />
-                    {errors.category && (
-                      <Typography variant="caption" color="error">
-                        {errors.category.message}
-                      </Typography>
-                    )}
-                  </FormControl>
-                </Grid> */}
-
                 <Grid item xs={12}>
                   <Button
                     variant="contained"
@@ -320,12 +296,12 @@ const EditBookPage = () => {
                 {imagePreview && (
                   <Grid item xs={12} textAlign="center">
                     <Box mt={2}>
-                      <img
+                      <Image
                         src={imagePreview}
                         alt="Preview"
+                        width={160}
+                        height={160}
                         style={{
-                          width: 160,
-                          height: 160,
                           objectFit: 'cover',
                           borderRadius: 8,
                           border: '2px solid #307d1aff',

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image'; // ✅ Added for optimized image handling
 import api from '@/lib/api';
 
 interface User {
@@ -31,12 +32,12 @@ const ProfilePage = () => {
       } catch (err) {
         console.error('Failed to fetch profile:', err);
         alert('Failed to load profile');
-          router.push('/unauthorized');
+        router.push('/unauthorized');
       }
     };
 
     fetchProfile();
-  }, []);
+  }, [router]); // ✅ Added 'router' to the dependency array
 
   if (!user) return <p className="text-center mt-10 text-white">Loading profile...</p>;
 
@@ -45,9 +46,7 @@ const ProfilePage = () => {
     : null;
 
   return (
-    <div
-      className="min-h-screen flex items-center justify-center bg-[url('/bg5.jpg')] bg-cover bg-center bg-no-repeat relative"
-    >
+    <div className="min-h-screen flex items-center justify-center bg-[url('/bg5.jpg')] bg-cover bg-center bg-no-repeat relative">
       <div className="absolute inset-0 bg-black opacity-60 z-0"></div>
 
       <div className="relative z-10 max-w-md w-full p-6 bg-white/10 backdrop-blur-md rounded-xl shadow-lg text-white">
@@ -55,10 +54,12 @@ const ProfilePage = () => {
 
         {imageUrl && (
           <div className="flex justify-center mb-4">
-            <img
+            <Image
               src={imageUrl}
               alt="Profile"
-              className="w-40 h-40 rounded-md object-cover border-2 border-white shadow-md"
+              width={160}
+              height={160}
+              className="rounded-md object-cover border-2 border-white shadow-md"
             />
           </div>
         )}

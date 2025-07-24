@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
 import { Pagination } from '@mui/material';
+import Image from 'next/image';
 import Fuse from 'fuse.js';
 
 interface Book {
@@ -55,23 +56,7 @@ const BuyerDashboard = () => {
     };
 
     fetchData();
-  }, [router]);
-
-  useEffect(() => {
-    if (!search.trim()) {
-      setFilteredBooks(books);
-      return;
-    }
-
-    const fuse = new Fuse(books, {
-      keys: ['title', 'author'],
-      threshold: 0.4,
-    });
-
-    const results = fuse.search(search).map((r) => r.item);
-    setFilteredBooks(results);
-    setPage(1);
-  }, [search, books]);
+  }, [router, page]);
 
   const paginatedBooks = useMemo(() => {
     const start = (page - 1) * 6;
@@ -82,31 +67,19 @@ const BuyerDashboard = () => {
     router.push(`/books/${id}`);
   };
 
-  // const handleLogout = () => {
-  //   localStorage.removeItem('bookbay_user');
-  //   localStorage.removeItem('bookbay_token');
-  //   router.push('/login');
-   
-  // };
-
   const handleLogout = async () => {
-      try {
-        // Call server to clear cookies
-        await fetch('/api/auth/clear-cookies', {
-          method: 'POST',
-        });
-      } catch (err) {
-        console.error('Failed to clear cookies:', err);
-      }
+    try {
+      await fetch('/api/auth/clear-cookies', {
+        method: 'POST',
+      });
+    } catch (err) {
+      console.error('Failed to clear cookies:', err);
+    }
 
-      // Clear localStorage
-      localStorage.removeItem('bookbay_user');
-      localStorage.removeItem('bookbay_token');
-
-      // Redirect
-      window.location.href = '/login';
-    };
-
+    localStorage.removeItem('bookbay_user');
+    localStorage.removeItem('bookbay_token');
+    window.location.href = '/login';
+  };
 
   return (
     <div
@@ -166,17 +139,13 @@ const BuyerDashboard = () => {
                   className="bg-black/50 rounded-xl overflow-hidden shadow-md hover:shadow-xl border border-gray-700 transform transition-transform hover:scale-105 flex flex-col backdrop-blur-sm"
                 >
                   <div className="h-48 w-full bg-transparent flex items-center justify-center overflow-hidden">
-                    <img
-                      src={
-                        book.image
-                          ? `${process.env.NEXT_PUBLIC_BACKEND_URL}/${book.image}`
-                          : '/images/book.png'
-                      }
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = '/images/book.png';
-                      }}
+                    <Image
+                      src={book.image ? `${process.env.NEXT_PUBLIC_BACKEND_URL}/${book.image}` : '/images/book.png'}
                       alt={book.title}
+                      width={200}
+                      height={300}
                       className="h-full w-auto object-contain rounded"
+                      onError={() => {}}
                     />
                   </div>
 

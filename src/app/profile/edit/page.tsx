@@ -3,6 +3,7 @@
 import { useEffect, useState, ChangeEvent, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import * as yup from 'yup';
+import Image from 'next/image';
 import api from '@/lib/api';
 
 interface User {
@@ -17,172 +18,150 @@ const schema = yup.object({
   email: yup.string().email('Invalid email').required('Email is required'),
   image: yup
     .mixed()
-    .test('fileType', 'Only image files allowed', (value) => {
-      // Allow: no change (null), existing image URL (string), or new file (File)
-      if (!value) return true;
-      if (typeof value === 'string') return true; 
-      if (value instanceof File) return value.type.startsWith('image/');
-      return false;
+    .nullable()
+    .test('fileSize', 'The image is too large', (value) => {
+      return !value || (value instanceof File && value.size <= 5 * 1024 * 1024);
     }),
 });
 
-
 const EditProfilePage = () => {
-  const [form, setForm] = useState<User>({ name: '', email: '', role: '', image: null });
-  const [image, setImage] = useState<File | null>(null);
-  const [preview, setPreview] = useState<string | null>(null);
-  const [errors, setErrors] = useState<{ name?: string; email?: string; image?: string }>({});
   const router = useRouter();
+
+  const [form, setForm] = useState<User>({
+    name: '',
+    email: '',
+    role: '',
+    image: '',
+  });
+
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const token = localStorage.getItem('bookbay_token');
-        const res = await api.get('/users/viewProfile', {
-          headers: { Authorization: `Bearer ${token}` },
+        const res = await api.get('/users/viewProfile');
+        const data = res.data;
+        setForm({
+          name: data.name,
+          email: data.email,
+          role: data.role,
+          image: data.image || '',
         });
-        const userData = res.data.data;
-        setForm({ ...userData, image: userData.image || null });
-
-        if (userData.image) {
-          const imageUrl = `${process.env.NEXT_PUBLIC_BACKEND_URL}${userData.image.startsWith('/') ? '' : '/'}${userData.image}`;
-          setPreview(imageUrl);
-        }
-      } catch (err) {
-        console.error('Failed to load profile:', err);
-        alert('Failed to load profile');
-          router.push('/unauthorized');
+        setPreview(data.image || null);
+      } catch (error: any) {
+        console.error(error);
+        router.push('/unauthorized');
       }
     };
 
     fetchProfile();
-  }, []);
+  }, [router]);
+
+  const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+      setPreview(URL.createObjectURL(file));
+    }
+  };
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      const selected = e.target.files[0];
-      setImage(selected);
-      setPreview(URL.createObjectURL(selected));
-    }
-  };
-
-  const handleRemoveImage = () => {
-    setImage(null);
-    setPreview(null);
-    setForm((prev) => ({ ...prev, image: null }));
-  };
-
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    const formToValidate = {
-      ...form,
-      image: image || null,
-    };
-
     try {
-      await schema.validate(formToValidate, { abortEarly: false });
+      await schema.validate({ ...form, image: selectedFile }, { abortEarly: false });
       setErrors({});
 
-      const token = localStorage.getItem('bookbay_token');
       const formData = new FormData();
       formData.append('name', form.name);
       formData.append('email', form.email);
-      if (image) formData.append('image', image);
+      if (selectedFile) formData.append('image', selectedFile);
 
-      await api.patch('/users/editProfile', formData, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-
-      alert('Profile updated successfully');
+      await api.put('/users/editProfile', formData);
+      alert('Profile updated!');
       router.push('/profile');
     } catch (err: any) {
       if (err.name === 'ValidationError') {
-        const validationErrors: Record<string, string> = {};
-        err.inner.forEach((e: any) => {
-          validationErrors[e.path] = e.message;
+        const newErrors: Record<string, string> = {};
+        err.inner.forEach((validationError: any) => {
+          newErrors[validationError.path] = validationError.message;
         });
-        setErrors(validationErrors);
+        setErrors(newErrors);
       } else {
-        console.error('Profile update failed:', err);
-        alert('Profile update failed');
+        console.error(err);
       }
     }
   };
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center px-4">
-      {/* Background Image */}
-      <div className="absolute inset-0 z-0">
-        <div className="absolute inset-0 bg-[url('/bg5.jpg')] bg-cover bg-center bg-no-repeat"></div>
-        <div className="absolute inset-0 bg-black opacity-70"></div>
-      </div>
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white flex justify-center items-center px-4">
+      <form
+        onSubmit={handleSubmit}
+        encType="multipart/form-data"
+        className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md w-full max-w-md space-y-4"
+      >
+        <h1 className="text-2xl font-bold text-center">Edit Profile</h1>
 
-      {/* Form Card */}
-      <div className="relative z-10 max-w-md mx-auto mt-10 p-6 bg-black/40 backdrop-blur-md rounded shadow text-white w-full">
-        <h1 className="text-2xl font-bold text-center mb-6">Edit Profile</h1>
+        {preview && (
+          <div className="flex justify-center">
+            <Image
+              src={preview}
+              alt="Profile Preview"
+              width={160}
+              height={160}
+              className="rounded-md object-cover border mb-2"
+            />
+          </div>
+        )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {preview && (
-            <div className="flex flex-col items-center mb-4">
-              <img
-                src={preview}
-                alt="Profile Preview"
-                className="w-40 h-40 rounded-md object-cover border mb-2"
-              />
-              <button
-                type="button"
-                onClick={handleRemoveImage}
-                className="text-red-400 hover:text-red-600 text-sm"
-              >
-                ✕ Remove Image
-              </button>
-            </div>
-          )}
-
-          <input
-            type="file"
-            accept="image/*"
-            onChange={handleImageChange}
-            className="block w-full text-sm text-white"
-          />
-          {errors.image && <p className="text-red-400 text-sm">{errors.image}</p>}
-
+        <div>
+          <label className="block mb-1">Name</label>
           <input
             type="text"
             name="name"
             value={form.name}
             onChange={handleChange}
-            placeholder="Your Name"
-            className="w-full p-2 border border-gray-300 rounded bg-transparent text-white placeholder-gray-300"
+            className="w-full px-3 py-2 border rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
           />
-          {errors.name && <p className="text-red-400 text-sm">{errors.name}</p>}
+          {errors.name && <p className="text-red-500 text-sm">{errors.name}</p>}
+        </div>
 
+        <div>
+          <label className="block mb-1">Email</label>
           <input
             type="email"
             name="email"
             value={form.email}
             onChange={handleChange}
-            placeholder="Your Email"
-            className="w-full p-2 border border-gray-300 rounded bg-transparent text-white placeholder-gray-300"
+            className="w-full px-3 py-2 border rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
           />
-          {errors.email && <p className="text-red-400 text-sm">{errors.email}</p>}
+          {errors.email && <p className="text-red-500 text-sm">{errors.email}</p>}
+        </div>
 
-          <button
-            type="submit"
-            className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition"
-          >
-            Update Profile
-          </button>
-        </form>
-      </div>
+        <div>
+          <label className="block mb-1">Profile Image</label>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={handleImageChange}
+            className="w-full text-sm"
+          />
+          {errors.image && <p className="text-red-500 text-sm">{errors.image}</p>}
+        </div>
+
+        <button
+          type="submit"
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded"
+        >
+          Update Profile
+        </button>
+      </form>
     </div>
   );
 };

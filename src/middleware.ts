@@ -28,14 +28,12 @@ export const middleware = (request: NextRequest) => {
     }
   }
 
-  // Profile route protection
+  // other route protection
 if (pathname.startsWith('/profile') || pathname.startsWith('/books')) {
   if (!token) {
     return NextResponse.redirect(new URL('/unauthorized', request.url));
   }
 }
-
-
   return NextResponse.next();
 };
 

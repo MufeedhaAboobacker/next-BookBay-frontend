@@ -2,6 +2,7 @@
 
 import { useState, ChangeEvent, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image'; // ✅ Added for optimized image handling
 import * as yup from 'yup';
 import api from '@/lib/api';
 
@@ -53,225 +54,179 @@ const RegisterPage = () => {
     }
   };
 
-  // const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-  //   e.preventDefault();
-
-  //   try {
-  //     await schema.validate(form, { abortEarly: false });
-  //     setErrors({}); // clear previous errors
-
-  //     const data = new FormData();
-  //     data.append('name', form.name);
-  //     data.append('email', form.email);
-  //     data.append('password', form.password);
-  //     data.append('role', form.role);
-  //     if (form.image) {
-  //       data.append('image', form.image);
-  //     }
-
-  //     const res = await api.post('/auth/register', data);
-  //     const { token, data: user } = res.data;
-
-  //     localStorage.setItem('bookbay_token', token);
-  //     localStorage.setItem('bookbay_user', JSON.stringify(user));
-  //     localStorage.setItem('role', user.role);
-
-  //     alert('Registration successful!');
-  //     router.push(user.role === 'seller' ? '/seller' : '/dashboard');
-  //   } catch (err: any) {
-  //     if (err.name === 'ValidationError') {
-  //       const errorMap: { [key: string]: string } = {};
-  //       err.inner.forEach((error: yup.ValidationError) => {
-  //         if (error.path) errorMap[error.path] = error.message;
-  //       });
-  //       setErrors(errorMap);
-  //     } else {
-  //       const message =
-  //         err?.response?.data?.message ||
-  //         err?.response?.data?.error ||
-  //         'Registration failed!';
-  //       alert(message);
-  //       console.log('Error Response:', err?.response?.data);
-  //     }
-  //   }
-  // };
-
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
-   e.preventDefault();
+    e.preventDefault();
 
-  // Validate form with Yup
-  schema.validate(form, { abortEarly: false })
-    .then(() => {
-      setErrors({}); 
+    schema.validate(form, { abortEarly: false })
+      .then(() => {
+        setErrors({});
 
-      const data = new FormData();
-      data.append('name', form.name);
-      data.append('email', form.email);
-      data.append('password', form.password);
-      data.append('role', form.role);
-      if (form.image) {
-        data.append('image', form.image);
-      }
-
-      // API call
-      return api.post('/auth/register', data);
-    })
-    .then((res) => {
-      const { token, data: user } = res.data;
-
-      // Store in localStorage
-      localStorage.setItem('bookbay_token', token);
-      localStorage.setItem('bookbay_user', JSON.stringify(user));
-      localStorage.setItem('role', user.role);
-
-      // Set cookies via internal API
-      return fetch('/api/auth/set-cookies', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ token, role: user.role }),
-      }).then((cookieRes) => {
-        if (!cookieRes.ok) {
-          throw new Error('Failed to set cookies');
+        const data = new FormData();
+        data.append('name', form.name);
+        data.append('email', form.email);
+        data.append('password', form.password);
+        data.append('role', form.role);
+        if (form.image) {
+          data.append('image', form.image);
         }
 
-        alert('Registration successful!');
-        router.push(user.role === 'seller' ? '/seller' : '/dashboard');
-      });
-    })
-    .catch((err) => {
-      if (err.name === 'ValidationError') {
-        const errorMap: { [key: string]: string } = {};
-        err.inner.forEach((error: yup.ValidationError) => {
-          if (error.path) {
-            errorMap[error.path] = error.message;
-          }
-        });
-        setErrors(errorMap);
-      } else {
-        console.error('Registration error:', err);
-        const message =
-          err?.response?.data?.message ||
-          err?.response?.data?.error ||
-          err?.message ||
-          'Registration failed!';
-        alert(message);
-      }
-    });
-};
+        return api.post('/auth/register', data);
+      })
+      .then((res) => {
+        const { token, data: user } = res.data;
 
+        localStorage.setItem('bookbay_token', token);
+        localStorage.setItem('bookbay_user', JSON.stringify(user));
+        localStorage.setItem('role', user.role);
+
+        return fetch('/api/auth/set-cookies', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ token, role: user.role }),
+        }).then((cookieRes) => {
+          if (!cookieRes.ok) {
+            throw new Error('Failed to set cookies');
+          }
+
+          alert('Registration successful!');
+          router.push(user.role === 'seller' ? '/seller' : '/dashboard');
+        });
+      })
+      .catch((err) => {
+        if (err.name === 'ValidationError') {
+          const errorMap: { [key: string]: string } = {};
+          err.inner.forEach((error: yup.ValidationError) => {
+            if (error.path) {
+              errorMap[error.path] = error.message;
+            }
+          });
+          setErrors(errorMap);
+        } else {
+          console.error('Registration error:', err);
+          const message =
+            err?.response?.data?.message ||
+            err?.response?.data?.error ||
+            err?.message ||
+            'Registration failed!';
+          alert(message);
+        }
+      });
+  };
 
   return (
-   <div className="relative min-h-screen flex items-center justify-center px-4 overflow-hidden">
-  {/* Background Image Layer */}
-  <div className="absolute inset-0 z-0">
-    <div className="absolute inset-0 bg-[url('/bg5.jpg')] bg-cover bg-center bg-no-repeat"></div>
-    <div className="absolute inset-0 bg-black opacity-60"></div>
-  </div>
+    <div className="relative min-h-screen flex items-center justify-center px-4 overflow-hidden">
+      {/* Background Image Layer */}
+      <div className="absolute inset-0 z-0">
+        <div className="absolute inset-0 bg-[url('/bg5.jpg')] bg-cover bg-center bg-no-repeat"></div>
+        <div className="absolute inset-0 bg-black opacity-60"></div>
+      </div>
 
-  {/* Register Form */}
-        <form
-          onSubmit={handleSubmit}
-          encType="multipart/form-data"
-          className="relative z-10 bg-black bg-opacity-20 shadow-xl rounded-2xl p-8 w-full max-w-3xl text-white"
-        >
-          <h1 className="text-3xl font-bold text-center mb-6 text-white">Register</h1>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label htmlFor="name" className="block text-sm font-medium text-white">Name</label>
-              <input
-                id="name"
-                name="name"
-                type="text"
-                placeholder="Your name"
-                value={form.name}
-                onChange={handleChange}
-                className="mt-1 w-full rounded-md border border-gray-300 px-4 py-2 text-black focus:ring-2 focus:ring-indigo-400"
-              />
-              {errors.name && <p className="text-red-400 text-sm mt-1">{errors.name}</p>}
-            </div>
-
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-white">Email</label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                placeholder="you@example.com"
-                value={form.email}
-                onChange={handleChange}
-                className="mt-1 w-full rounded-md border border-gray-300 px-4 py-2 text-black focus:ring-2 focus:ring-indigo-400"
-              />
-              {errors.email && <p className="text-red-400 text-sm mt-1">{errors.email}</p>}
-            </div>
-
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-white">Password</label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                placeholder="••••••••"
-                value={form.password}
-                onChange={handleChange}
-                className="mt-1 w-full rounded-md border border-gray-300 px-4 py-2 text-black focus:ring-2 focus:ring-indigo-400"
-              />
-              {errors.password && <p className="text-red-400 text-sm mt-1">{errors.password}</p>}
-            </div>
-
-            <div>
-              <label htmlFor="role" className="block text-sm font-medium text-white">Role</label>
-              <select
-                id="role"
-                name="role"
-                value={form.role}
-                onChange={handleChange}
-                className="mt-1 w-full rounded-md border border-gray-300 px-4 py-2 text-black focus:ring-2 focus:ring-indigo-400"
-              >
-                <option value="buyer">Buyer</option>
-                <option value="seller">Seller</option>
-              </select>
-              {errors.role && <p className="text-red-400 text-sm mt-1">{errors.role}</p>}
-            </div>
-
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-white">Profile Image</label>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleImageChange}
-                className="mt-1 w-full border px-4 py-2 rounded bg-white text-black"
-              />
-              {imagePreview && (
-                <img
-                  src={imagePreview}
-                  alt="Preview"
-                  className="mt-2 h-28 w-28 object-cover rounded-full mx-auto"
-                />
-              )}
-            </div>
-
-            <div className="md:col-span-2">
-              <button
-                type="submit"
-                className="w-full bg-green-800 hover:bg-green-700 text-white py-2 rounded-md transition duration-200"
-              >
-                Register
-              </button>
-            </div>
+      {/* Register Form */}
+      <form
+        onSubmit={handleSubmit}
+        encType="multipart/form-data"
+        className="relative z-10 bg-black bg-opacity-20 shadow-xl rounded-2xl p-8 w-full max-w-3xl text-white"
+      >
+        <h1 className="text-3xl font-bold text-center mb-6 text-white">Register</h1>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label htmlFor="name" className="block text-sm font-medium text-white">Name</label>
+            <input
+              id="name"
+              name="name"
+              type="text"
+              placeholder="Your name"
+              value={form.name}
+              onChange={handleChange}
+              className="mt-1 w-full rounded-md border border-gray-300 px-4 py-2 text-black focus:ring-2 focus:ring-indigo-400"
+            />
+            {errors.name && <p className="text-red-400 text-sm mt-1">{errors.name}</p>}
           </div>
 
-          <p className="text-center text-sm mt-6 text-white">
-            Already have an account?{' '}
-            <a href="/login" className="text-green-400 font-semibold hover:underline">
-              Login
-            </a>
-          </p>
-        </form>
-</div>
- 
+          <div>
+            <label htmlFor="email" className="block text-sm font-medium text-white">Email</label>
+            <input
+              id="email"
+              name="email"
+              type="email"
+              placeholder="you@example.com"
+              value={form.email}
+              onChange={handleChange}
+              className="mt-1 w-full rounded-md border border-gray-300 px-4 py-2 text-black focus:ring-2 focus:ring-indigo-400"
+            />
+            {errors.email && <p className="text-red-400 text-sm mt-1">{errors.email}</p>}
+          </div>
+
+          <div>
+            <label htmlFor="password" className="block text-sm font-medium text-white">Password</label>
+            <input
+              id="password"
+              name="password"
+              type="password"
+              placeholder="••••••••"
+              value={form.password}
+              onChange={handleChange}
+              className="mt-1 w-full rounded-md border border-gray-300 px-4 py-2 text-black focus:ring-2 focus:ring-indigo-400"
+            />
+            {errors.password && <p className="text-red-400 text-sm mt-1">{errors.password}</p>}
+          </div>
+
+          <div>
+            <label htmlFor="role" className="block text-sm font-medium text-white">Role</label>
+            <select
+              id="role"
+              name="role"
+              value={form.role}
+              onChange={handleChange}
+              className="mt-1 w-full rounded-md border border-gray-300 px-4 py-2 text-black focus:ring-2 focus:ring-indigo-400"
+            >
+              <option value="buyer">Buyer</option>
+              <option value="seller">Seller</option>
+            </select>
+            {errors.role && <p className="text-red-400 text-sm mt-1">{errors.role}</p>}
+          </div>
+
+          <div className="md:col-span-2">
+            <label className="block text-sm font-medium text-white">Profile Image</label>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleImageChange}
+              className="mt-1 w-full border px-4 py-2 rounded bg-white text-black"
+            />
+            {imagePreview && (
+              <div className="mt-2 flex justify-center">
+                <Image
+                  src={imagePreview}
+                  alt="Preview"
+                  width={112}
+                  height={112}
+                  className="rounded-full object-cover"
+                />
+              </div>
+            )}
+          </div>
+
+          <div className="md:col-span-2">
+            <button
+              type="submit"
+              className="w-full bg-green-800 hover:bg-green-700 text-white py-2 rounded-md transition duration-200"
+            >
+              Register
+            </button>
+          </div>
+        </div>
+
+        <p className="text-center text-sm mt-6 text-white">
+          Already have an account?{' '}
+          <a href="/login" className="text-green-400 font-semibold hover:underline">
+            Login
+          </a>
+        </p>
+      </form>
+    </div>
   );
 };
 

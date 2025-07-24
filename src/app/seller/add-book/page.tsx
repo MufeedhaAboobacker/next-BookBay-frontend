@@ -26,6 +26,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import api from '@/lib/api';
+import Image from 'next/image';
 
 const categories = [
   'fiction', 'non-fiction', 'educational', 'biography', 'fantasy', 'science-fiction',
@@ -112,7 +113,7 @@ const AddBookPage = () => {
     } catch (err: any) {
       console.error('Error adding book:', err);
       alert(err?.response?.data?.message || 'Something went wrong');
-        router.push('/unauthorized');
+      router.push('/unauthorized');
     }
   };
 
@@ -271,17 +272,17 @@ const AddBookPage = () => {
                 </Grid>
                 <Grid item xs={12}>
                   <Button
-                     variant="contained"
-                      component="label"
-                      fullWidth
-                      sx={{
-                        bgcolor: '#307d1aff',
-                        color: 'white',
-                        fontWeight: 600,
-                        '&:hover': {
-                          bgcolor: '#1f4d13ff', // No change on hover
-                        },
-                      }}
+                    variant="contained"
+                    component="label"
+                    fullWidth
+                    sx={{
+                      bgcolor: '#307d1aff',
+                      color: 'white',
+                      fontWeight: 600,
+                      '&:hover': {
+                        bgcolor: '#1f4d13ff',
+                      },
+                    }}
                   >
                     Upload Book Image
                     <input
@@ -297,15 +298,16 @@ const AddBookPage = () => {
                     </Typography>
                   )}
                 </Grid>
+
                 {imagePreview && (
                   <Grid item xs={12} textAlign="center">
                     <Box mt={2}>
-                      <img
+                      <Image
                         src={imagePreview}
                         alt="Preview"
+                        width={160}
+                        height={160}
                         style={{
-                          width: 160,
-                          height: 160,
                           objectFit: 'cover',
                           borderRadius: 8,
                           border: '2px solid #307d1aff',
@@ -318,24 +320,25 @@ const AddBookPage = () => {
                         sx={{ mt: 1 }}
                         onClick={handleRemoveImage}
                       >
-                         Remove Image
+                        Remove Image
                       </Button>
                     </Box>
                   </Grid>
                 )}
+
                 <Grid item xs={12} md={6}>
                   <Button
-                     type="submit"
-                      fullWidth
-                      variant="contained"
-                      sx={{
-                        bgcolor: '#307d1aff',
-                        color: 'white',
-                        fontWeight: 'bold',
-                        '&:hover': {
-                          bgcolor: '#1f4d13ff', // Disable hover effect
-                        },
-                      }}
+                    type="submit"
+                    fullWidth
+                    variant="contained"
+                    sx={{
+                      bgcolor: '#307d1aff',
+                      color: 'white',
+                      fontWeight: 'bold',
+                      '&:hover': {
+                        bgcolor: '#1f4d13ff',
+                      },
+                    }}
                   >
                     Add Book
                   </Button>

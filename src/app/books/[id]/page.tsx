@@ -16,6 +16,7 @@ import {
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import api from '@/lib/api';
+import Image from 'next/image';
 
 interface Book {
   _id: string;
@@ -119,19 +120,19 @@ const BookDetail = () => {
 
   return (
     <Container
-  disableGutters
-  maxWidth={false}
-  sx={{
-    minHeight: '100vh',
-    backgroundColor: 'rgba(0, 0, 0, 0.9)', // Black with transparency
-    backgroundImage: 'url("/bg6.jpeg")',
-    backgroundSize: 'cover',
-    backgroundPosition: 'center',
-    backgroundRepeat: 'no-repeat',
-    py: 6,
-    position: 'relative',
-  }}
->
+        disableGutters
+        maxWidth={false}
+        sx={{
+          minHeight: '100vh',
+          backgroundColor: 'rgba(0, 0, 0, 0.9)', 
+          backgroundImage: 'url("/bg6.jpeg")',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
+          py: 6,
+          position: 'relative',
+        }}
+      >
       {/* Overlay */}
       <Box
         sx={{
@@ -152,72 +153,73 @@ const BookDetail = () => {
           mx: 'auto',
         }}
       >
-        <Card
-  sx={{
-    display: 'flex',
-    flexDirection: { xs: 'column', md: 'row' },
-    boxShadow: 6,
-    borderRadius: 3,
-    p: 2,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)', // semi-transparent black
-    color: '#fff', // white text
-    backdropFilter: 'blur(8px)',
-    border: '1px solid rgba(255,255,255,0.1)',
-  }}
->
 
-          <Box sx={{ flex: 1, pr: 3 }}>
-            <CardContent>
-              <Typography variant="h5" fontWeight={700} gutterBottom>
-                {book.title}
-              </Typography>
-              <Typography variant="subtitle1" color="text.light" gutterBottom>
-                by {book.author}
-              </Typography>
-              {book.price && (
-                <Typography variant="h6" color="green" gutterBottom>
-                  ₹{book.price}
-                </Typography>
-              )}
-              {book.rating && (
-                <Typography variant="body1" gutterBottom>
-                  <b>Rating:</b> {book.rating} / 5
-                </Typography>
-              )}
-              {book.category && (
-                <Typography variant="body1" gutterBottom>
-                 <b> Category:</b> {book.category}
-                </Typography>
-              )}
-              <Box mt={3}>
-                <Typography variant="h6"><b>Description</b></Typography>
-                <Typography variant="body2" color="text.light">
-                  {book.description}
-                </Typography>
-              </Box>
+      <Card
+        sx={{
+          display: 'flex',
+          flexDirection: { xs: 'column', md: 'row' },
+          boxShadow: 6,
+          borderRadius: 3,
+          p: 2,
+          backgroundColor: 'rgba(0, 0, 0, 0.6)', 
+          color: '#fff', 
+          backdropFilter: 'blur(8px)',
+          border: '1px solid rgba(255,255,255,0.1)',
+        }}
+      >
 
-              {isSeller && (
-                <Box mt={4} display="flex" gap={2} flexWrap="wrap">
-                  <Button
-                    variant="contained"
-                    color="primary"
-                    onClick={handleEdit}
-                    sx={{ textTransform: 'none', borderRadius: 2 }}
-                  >
-                    Edit
-                  </Button>
-                  <Button
-                    variant="contained"
-                    color="error"
-                    onClick={() => setDeleteDialogOpen(true)}
-                    sx={{ textTransform: 'none', borderRadius: 2 }}
-                  >
-                    Delete
-                  </Button>
-                </Box>
-              )}
-            </CardContent>
+    <Box sx={{ flex: 1, pr: 3 }}>
+      <CardContent>
+        <Typography variant="h5" fontWeight={700} gutterBottom>
+          {book.title}
+        </Typography>
+        <Typography variant="subtitle1" color="text.light" gutterBottom>
+          by {book.author}
+        </Typography>
+        {book.price && (
+          <Typography variant="h6" color="green" gutterBottom>
+            ₹{book.price}
+          </Typography>
+        )}
+        {book.rating && (
+          <Typography variant="body1" gutterBottom>
+            <b>Rating:</b> {book.rating} / 5
+          </Typography>
+        )}
+        {book.category && (
+          <Typography variant="body1" gutterBottom>
+            <b> Category:</b> {book.category}
+          </Typography>
+        )}
+        <Box mt={3}>
+          <Typography variant="h6"><b>Description</b></Typography>
+          <Typography variant="body2" color="text.light">
+            {book.description}
+          </Typography>
+        </Box>
+
+        {isSeller && (
+          <Box mt={4} display="flex" gap={2} flexWrap="wrap">
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={handleEdit}
+              sx={{ textTransform: 'none', borderRadius: 2 }}
+            >
+              Edit
+            </Button>
+            <Button
+              variant="contained"
+              color="error"
+              onClick={() => setDeleteDialogOpen(true)}
+              sx={{ textTransform: 'none', borderRadius: 2 }}
+            >
+              Delete
+            </Button>
           </Box>
+            )}
+          </CardContent>
+        </Box>
 
           <Box sx={{ width: 300, flexShrink: 0 }}>
             <CardMedia
@@ -249,7 +251,7 @@ const BookDetail = () => {
           >
             <CloseIcon />
           </IconButton>
-          <img
+          <Image
             src={imageUrl}
             alt={book.title}
             style={{ width: '100%', height: 'auto', borderRadius: 8 }}
