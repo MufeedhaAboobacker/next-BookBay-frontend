@@ -32,7 +32,7 @@ const ProfilePage = () => {
       } catch (err) {
         console.error('Failed to fetch profile:', err);
         alert('Failed to load profile');
-        router.push('/unauthorized');
+        // router.push('/unauthorized');
       }
     };
 
