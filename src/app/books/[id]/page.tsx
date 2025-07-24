@@ -251,7 +251,7 @@ const BookDetail = () => {
           >
             <CloseIcon />
           </IconButton>
-          <Image
+          <img
             src={imageUrl}
             alt={book.title}
             style={{ width: '100%', height: 'auto', borderRadius: 8 }}
