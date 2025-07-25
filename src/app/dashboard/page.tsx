@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
 import { Pagination } from '@mui/material';
 import Image from 'next/image';
-import Fuse from 'fuse.js';
 
 interface Book {
   _id: string;
@@ -58,14 +57,27 @@ const BuyerDashboard = () => {
     fetchData();
   }, [router, page]);
 
+  useEffect(() => {
+    if (search.trim() === '') {
+      setFilteredBooks(books);
+    } else {
+      const lower = search.toLowerCase();
+      setFilteredBooks(
+        books.filter(
+          (book) =>
+            book.title.toLowerCase().includes(lower) ||
+            book.author.toLowerCase().includes(lower)
+        )
+      );
+    }
+  }, [search, books]);
+
   const paginatedBooks = useMemo(() => {
     const start = (page - 1) * 6;
     return filteredBooks.slice(start, start + 6);
   }, [filteredBooks, page]);
 
-  const handleView = (id: string) => {
-    router.push(`/books/${id}`);
-  };
+  const handleView = (id: string) => router.push(`/books/${id}`);
 
   const handleLogout = async () => {
     try {
@@ -89,7 +101,6 @@ const BuyerDashboard = () => {
       <div className="absolute inset-0 bg-black opacity-60 z-0"></div>
 
       <div className="relative z-10 max-w-6xl mx-auto text-white">
-        {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-center mb-10 gap-4">
           <h1 className="text-2xl md:text-3xl font-semibold">
             Welcome, {user.name || 'Buyer'}
@@ -112,7 +123,6 @@ const BuyerDashboard = () => {
           </div>
         </div>
 
-        {/* Search */}
         <div className="mb-6">
           <input
             type="text"
@@ -123,7 +133,6 @@ const BuyerDashboard = () => {
           />
         </div>
 
-        {/* Books */}
         <h2 className="text-xl font-semibold mb-4 text-white">Available Books</h2>
 
         {loading ? (
@@ -140,18 +149,24 @@ const BuyerDashboard = () => {
                 >
                   <div className="h-48 w-full bg-transparent flex items-center justify-center overflow-hidden">
                     <Image
-                      src={book.image ? `${process.env.NEXT_PUBLIC_BACKEND_URL}/${book.image}` : '/images/book.png'}
+                      src={
+                        book.image
+                          ? `${process.env.NEXT_PUBLIC_BACKEND_URL}/${book.image}`
+                          : '/images/book.png'
+                      }
                       alt={book.title}
                       width={200}
                       height={300}
-                      className="h-full w-auto object-contain rounded"
-                      onError={() => {}}
+                      className="object-contain rounded"
+                      unoptimized={!book.image}
                     />
                   </div>
 
                   <div className="p-4 flex flex-col justify-between flex-grow">
                     <div>
-                      <h3 className="text-lg font-semibold text-white truncate">{book.title}</h3>
+                      <h3 className="text-lg font-semibold text-white truncate">
+                        {book.title}
+                      </h3>
                       <p className="text-sm text-gray-300 mb-1">by {book.author}</p>
                       <p className="text-green-400 font-bold">₹{book.price}</p>
                     </div>
@@ -166,7 +181,6 @@ const BuyerDashboard = () => {
               ))}
             </div>
 
-            {/* Pagination */}
             {filteredBooks.length > 6 && (
               <div className="flex justify-center mt-10">
                 <div className="bg-black/30 backdrop-blur-md px-6 py-4 rounded-lg shadow-lg">
@@ -198,7 +212,6 @@ const BuyerDashboard = () => {
         )}
       </div>
 
-      {/* Logout Confirmation Dialog */}
       {showLogoutConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
           <div className="bg-white rounded-md p-6 max-w-sm w-full shadow-lg">
