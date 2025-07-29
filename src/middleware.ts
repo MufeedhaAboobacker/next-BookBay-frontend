@@ -13,7 +13,7 @@ export const middleware = (request: NextRequest) => {
         : new URL('/seller', request.url);
     return NextResponse.redirect(redirectUrl);
   }
-
+// console.log(pathname,token, role,"user roleeeee.....")
   // Buyer route protection
   if (pathname.startsWith('/dashboard')) {
     if (!token || role !== 'buyer') {

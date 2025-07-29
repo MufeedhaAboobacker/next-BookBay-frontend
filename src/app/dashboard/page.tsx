@@ -1,8 +1,10 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import api from '@/lib/api';
+import { useDispatch, useSelector } from 'react-redux';
+import { AppDispatch, RootState } from '@/redux/store';
+import { listBooks } from '@/redux/slices/bookSlice';
 import { Pagination } from '@mui/material';
 import Image from 'next/image';
 
@@ -15,75 +17,53 @@ interface Book {
 }
 
 const BuyerDashboard = () => {
-  const [books, setBooks] = useState<Book[]>([]);
-  const [filteredBooks, setFilteredBooks] = useState<Book[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState<{ name?: string }>({});
-  const [page, setPage] = useState(1);
-  const [search, setSearch] = useState('');
-  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
-
+  const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
 
+  const { books = [], loading, error } = useSelector((state: RootState) => state.books || {});
+  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState('');
+  const [user, setUser] = useState<{ name?: string }>({});
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+
+  const itemsPerPage = 6;
+
+  // Fetch books
   useEffect(() => {
-    const fetchData = async () => {
-      const token = localStorage.getItem('bookbay_token');
-      const userData = JSON.parse(localStorage.getItem('bookbay_user') || '{}');
+    const token = localStorage.getItem('bookbay_token');
+    const userData = JSON.parse(localStorage.getItem('bookbay_user') || '{}');
 
-      if (!token || userData?.role !== 'buyer') {
-        alert('Unauthorized. Please login as a buyer.');
-        router.push('/login');
-        return;
-      }
-
-      setUser(userData);
-
-      try {
-        const res = await api.get(`/books?page=${page}&limit=50`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        const data = res.data.data || [];
-        setBooks(data);
-        setFilteredBooks(data);
-      } catch (error: any) {
-        console.error('Failed to fetch books:', error);
-        alert(error?.response?.data?.message || 'Something went wrong');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [router, page]);
-
-  useEffect(() => {
-    if (search.trim() === '') {
-      setFilteredBooks(books);
-    } else {
-      const lower = search.toLowerCase();
-      setFilteredBooks(
-        books.filter(
-          (book) =>
-            book.title.toLowerCase().includes(lower) ||
-            book.author.toLowerCase().includes(lower)
-        )
-      );
+    if (!token || userData?.role !== 'buyer') {
+      alert('Unauthorized. Please login as a buyer.');
+      router.push('/login');
+      return;
     }
+
+    setUser(userData);
+    dispatch(listBooks());
+  }, [dispatch, router]);
+
+  // Filtered books
+  const filteredBooks: Book[] = useMemo(() => {
+    if (!search.trim()) return Array.isArray(books) ? books : [];
+
+    const lower = search.toLowerCase();
+    return books.filter(
+      (book) =>
+        book.title.toLowerCase().includes(lower) ||
+        book.author.toLowerCase().includes(lower)
+    );
   }, [search, books]);
 
+  // Pagination
   const paginatedBooks = useMemo(() => {
-    const start = (page - 1) * 6;
-    return filteredBooks.slice(start, start + 6);
+    const start = (page - 1) * itemsPerPage;
+    return filteredBooks.slice(start, start + itemsPerPage);
   }, [filteredBooks, page]);
-
-  const handleView = (id: string) => router.push(`/books/${id}`);
 
   const handleLogout = async () => {
     try {
-      await fetch('/api/auth/clear-cookies', {
-        method: 'POST',
-      });
+      await fetch('/api/auth/clear-cookies', { method: 'POST' });
     } catch (err) {
       console.error('Failed to clear cookies:', err);
     }
@@ -101,6 +81,7 @@ const BuyerDashboard = () => {
       <div className="absolute inset-0 bg-black opacity-60 z-0"></div>
 
       <div className="relative z-10 max-w-6xl mx-auto text-white">
+        {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-center mb-10 gap-4">
           <h1 className="text-2xl md:text-3xl font-semibold">
             Welcome, {user.name || 'Buyer'}
@@ -123,6 +104,7 @@ const BuyerDashboard = () => {
           </div>
         </div>
 
+        {/* Search */}
         <div className="mb-6">
           <input
             type="text"
@@ -133,6 +115,7 @@ const BuyerDashboard = () => {
           />
         </div>
 
+        {/* Book List */}
         <h2 className="text-xl font-semibold mb-4 text-white">Available Books</h2>
 
         {loading ? (
@@ -171,7 +154,7 @@ const BuyerDashboard = () => {
                       <p className="text-green-400 font-bold">₹{book.price}</p>
                     </div>
                     <button
-                      onClick={() => handleView(book._id)}
+                      onClick={() => router.push(`/books/${book._id}`)}
                       className="mt-4 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md text-sm font-medium flex items-center justify-center gap-2"
                     >
                       <i className="fa-solid fa-eye"></i> View
@@ -181,11 +164,11 @@ const BuyerDashboard = () => {
               ))}
             </div>
 
-            {filteredBooks.length > 6 && (
+            {filteredBooks.length > itemsPerPage && (
               <div className="flex justify-center mt-10">
                 <div className="bg-black/30 backdrop-blur-md px-6 py-4 rounded-lg shadow-lg">
                   <Pagination
-                    count={Math.ceil(filteredBooks.length / 6)}
+                    count={Math.ceil(filteredBooks.length / itemsPerPage)}
                     page={page}
                     onChange={(_, value) => setPage(value)}
                     color="primary"
@@ -212,6 +195,7 @@ const BuyerDashboard = () => {
         )}
       </div>
 
+      {/* Logout Confirmation */}
       {showLogoutConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
           <div className="bg-white rounded-md p-6 max-w-sm w-full shadow-lg">

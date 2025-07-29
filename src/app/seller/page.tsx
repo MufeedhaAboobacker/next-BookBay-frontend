@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import api from '@/lib/api';
+import toast from 'react-hot-toast';
 
 interface Book {
   _id: string;
@@ -29,7 +30,7 @@ const SellerDashboard = () => {
       const userData = JSON.parse(localStorage.getItem('bookbay_user') || '{}');
 
       if (!token || userData?.role !== 'seller') {
-        alert('Unauthorized. Please login as a seller.');
+        toast.error('Unauthorized. Please login as a seller.');
         router.push('/login');
         return;
       }
@@ -45,7 +46,7 @@ const SellerDashboard = () => {
         setFilteredBooks(fetchedBooks);
       } catch (error: any) {
         console.error('Failed to fetch seller books:', error);
-        alert(error?.response?.data?.message || 'Something went wrong');
+        toast.error(error?.response?.data?.message || 'Something went wrong');
       } finally {
         setLoading(false);
       }

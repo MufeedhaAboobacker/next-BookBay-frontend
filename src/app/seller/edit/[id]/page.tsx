@@ -1,14 +1,13 @@
 'use client';
 
 import React, { useEffect, useState, ChangeEvent } from 'react';
-import { useRouter, useParams } from 'next/navigation';
-import Image from 'next/image';
 import {
   Box,
   Button,
   Card,
   CardContent,
   CardHeader,
+  CircularProgress,
   Container,
   Divider,
   FormControl,
@@ -18,114 +17,95 @@ import {
   Select,
   TextField,
   Typography,
-  CircularProgress,
 } from '@mui/material';
 import { useForm, Controller } from 'react-hook-form';
-import { yupResolver } from '@hookform/resolvers/yup';
-import * as yup from 'yup';
-import api from '@/lib/api';
-
-const categories = [
-  'fiction', 'non-fiction', 'educational', 'biography', 'fantasy', 'science-fiction',
-  'romance', 'mystery', 'thriller', 'self-help', 'history', 'philosophy', 'children',
-  'young-adult', 'comics', 'graphic-novels', 'religion', 'health', 'business',
-  'technology', 'travel', 'poetry', 'cookbooks', 'art', 'sports', 'language', 'other',
-];
+import { useParams, useRouter } from 'next/navigation';
+import { useDispatch, useSelector } from 'react-redux';
+import { AppDispatch, RootState } from '@/redux/store';
+import { getBook, editBook, resetBookState } from '@/redux/slices/bookSlice';
+import useAuthToken from '@/hooks/useAuthToken';
+import Image from 'next/image';
+import toast from 'react-hot-toast';
 
 type BookFormFields = {
   title: string;
   author: string;
-  description: string;
   price: number;
+  description: string;
   category: string;
   rating: number;
   stock: number;
 };
 
-const schema: yup.ObjectSchema<BookFormFields> = yup.object({
-  title: yup.string().required('Title is required'),
-  author: yup.string().required('Author is required'),
-  description: yup.string().required('Description is required'),
-  price: yup.number().typeError('Price must be a number').positive().required('Price is required'),
-  category: yup.string().required('Category is required'),
-  rating: yup.number().typeError('Rating must be a number').min(0).max(5).required('Rating is required'),
-  stock: yup.number().typeError('Stock must be a number').min(1).required('Stock is required'),
-}).required();
+const categories = ['Fiction', 'Non-fiction', 'Education', 'Comics'];
 
 const EditBookPage = () => {
   const router = useRouter();
-  const { id } = useParams() as { id: string };
+  const dispatch = useDispatch<AppDispatch>();
+  const id = useParams()?.id as string;
+
+
+  const { book, loading } = useSelector((state: RootState) => state.books);
+
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [token, setToken] = useState<string | null>(null);
 
   const {
     control,
     handleSubmit,
-    setValue,
     reset,
     formState: { errors },
-  } = useForm<BookFormFields>({
-    resolver: yupResolver(schema),
-  });
+  } = useForm<BookFormFields>();
+
+  const { token, isAuthorized, isLoading: authLoading } = useAuthToken('seller');
 
   useEffect(() => {
-    const storedToken = localStorage.getItem('bookbay_token');
-    const userData = localStorage.getItem('bookbay_user');
+    if (!isAuthorized || !token) return;
 
-    if (!storedToken || !userData) {
-      alert('You must be logged in');
-      router.push('/login');
-      return;
-    }
+    dispatch(getBook({ id, token }))
 
-    const user = JSON.parse(userData);
-    if (user.role !== 'seller') {
-      alert('Access denied. Only sellers can update books.');
-      router.push('/login');
-      return;
-    }
-
-    setToken(storedToken);
-
-    (async () => {
-      try {
-        const res = await api.get(`/books/${id}`, {
-          headers: { Authorization: `Bearer ${storedToken}` },
-        });
-
-        const book = res.data.data;
+      .unwrap()
+      .then((book) => {
         reset({
           title: book.title,
           author: book.author,
-          description: book.description,
           price: book.price,
+          description: book.description,
           category: book.category,
           rating: book.rating,
           stock: book.stock,
         });
-        setImagePreview(book.image ? `${process.env.NEXT_PUBLIC_BACKEND_URL}/${book.image}` : null);
-      } catch (err) {
-        alert('Failed to fetch book');
+
+        if (book.image) {
+          setImagePreview(`${process.env.NEXT_PUBLIC_BACKEND_URL}/${book.image}`);
+        }
+      })
+      .catch((err) => {
+        console.error('Fetch book error:', err);
+        ('Failed to fetch book');
         router.push('/seller');
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, [id, router, reset]);
+      });
+
+    return () => {
+      dispatch(resetBookState());
+    };
+  }, [id, dispatch, reset, router, isAuthorized, token]);
 
   const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       setImageFile(file);
-      setImagePreview(URL.createObjectURL(file));
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
     }
   };
 
   const handleRemoveImage = () => {
-    setImageFile(null);
     setImagePreview(null);
+    setImageFile(null);
   };
 
   const onSubmit = async (data: BookFormFields) => {
@@ -141,22 +121,20 @@ const EditBookPage = () => {
     }
 
     try {
-      await api.patch(`/books/${id}`, formData, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      alert('Book updated successfully');
+      await dispatch(editBook({ id, bookData: formData, token })).unwrap();
+      toast.success('Book updated successfully');
       router.push('/seller');
-    } catch (error) {
-      alert('Failed to update book');
-      router.push('/unauthorized');
+    } catch (err) {
+      toast.error('Failed to update book');
     }
   };
 
-  if (loading) {
+  if (authLoading || loading || !book) {
     return (
-      <Typography align="center" sx={{ mt: 6 }}>
+      <Box textAlign="center" mt={10}>
         <CircularProgress />
-      </Typography>
+        <Typography mt={2}>Loading book details...</Typography>
+      </Box>
     );
   }
 
@@ -209,6 +187,7 @@ const EditBookPage = () => {
                     <Controller
                       name={name as keyof BookFormFields}
                       control={control}
+                      rules={{ required: `${label} is required` }}
                       render={({ field }) => (
                         <TextField
                           {...field}
@@ -232,6 +211,7 @@ const EditBookPage = () => {
                     <Controller
                       name="category"
                       control={control}
+                      rules={{ required: 'Category is required' }}
                       render={({ field }) => (
                         <Select {...field} sx={{ color: 'white' }}>
                           {categories.map((cat) => (
@@ -254,6 +234,7 @@ const EditBookPage = () => {
                   <Controller
                     name="description"
                     control={control}
+                    rules={{ required: 'Description is required' }}
                     render={({ field }) => (
                       <TextField
                         {...field}

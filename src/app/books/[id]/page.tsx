@@ -17,6 +17,7 @@ import {
 import CloseIcon from '@mui/icons-material/Close';
 import api from '@/lib/api';
 import Image from 'next/image';
+import toast from 'react-hot-toast';
 
 interface Book {
   _id: string;
@@ -75,11 +76,11 @@ const BookDetail = () => {
       await api.patch(`/books/delete/${id}`, null, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      alert('Book deleted successfully');
+      toast.success('Book deleted successfully');
       router.push('/seller');
     } catch (error: any) {
       console.error('Delete error:', error);
-      alert(error?.response?.data?.message || 'Failed to delete book');
+      toast.error(error?.response?.data?.message || 'Failed to delete book');
     } finally {
       setDeleteDialogOpen(false);
     }

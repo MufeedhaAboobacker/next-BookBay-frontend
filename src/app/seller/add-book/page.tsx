@@ -25,8 +25,11 @@ import { useRouter } from 'next/navigation';
 import { useForm, Controller } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
-import api from '@/lib/api';
 import Image from 'next/image';
+import { useDispatch, useSelector } from 'react-redux';
+import { AppDispatch, RootState } from '@/redux/store';
+import { addBook } from '@/redux/slices/bookSlice';
+import toast from 'react-hot-toast';
 
 const categories = [
   'fiction', 'non-fiction', 'educational', 'biography', 'fantasy', 'science-fiction',
@@ -60,10 +63,13 @@ const schema: yup.ObjectSchema<FormValues> = yup.object({
     .test('fileType', 'Only image files are allowed', (value) =>
       value instanceof FileList && value.length > 0 && value[0].type.startsWith('image/')
     ),
-}).required();
+});
 
 const AddBookPage = () => {
   const router = useRouter();
+  const dispatch = useDispatch<AppDispatch>();
+  const { success, error } = useSelector((state: RootState) => state.books);
+
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   const {
@@ -79,15 +85,26 @@ const AddBookPage = () => {
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem('bookbay_user') || '{}');
     if (user?.role !== 'seller') {
-      alert('Only sellers can add books');
+      toast.error('Only sellers can add books');
       router.push('/seller');
     }
   }, [router]);
 
+  useEffect(() => {
+    if (success) {
+      toast.success('Book added successfully!');
+      router.push('/seller');
+    }
+    if (error) {
+      toast.error(`Error: ${error}`);
+    }
+  }, [success, error, router]);
+
   const onSubmit = async (data: FormValues) => {
     const token = localStorage.getItem('bookbay_token');
-    const formData = new FormData();
+    if (!token) return toast.error('User not authenticated');
 
+    const formData = new FormData();
     Object.entries(data).forEach(([key, value]) => {
       if (key === 'image') {
         formData.append('image', (value as FileList)[0]);
@@ -96,25 +113,7 @@ const AddBookPage = () => {
       }
     });
 
-    try {
-      const res = await api.post('/books/add', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (res.data.status) {
-        alert('Book added successfully!');
-        router.push('/seller');
-      } else {
-        alert(res.data.message || 'Failed to add book');
-      }
-    } catch (err: any) {
-      console.error('Error adding book:', err);
-      alert(err?.response?.data?.message || 'Something went wrong');
-      router.push('/unauthorized');
-    }
+    dispatch(addBook({ formData, token }));
   };
 
   const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -132,81 +131,53 @@ const AddBookPage = () => {
   };
 
   return (
-    <Box
-      sx={{
-        minHeight: '100vh',
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundImage: "url('/bg2.avif')",
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat',
-        py: 6,
-        px: 2,
-      }}
-    >
+    <Box sx={{
+      minHeight: '100vh',
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundImage: "url('/bg2.avif')",
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      py: 6, px: 2,
+    }}>
       <Container maxWidth="md">
-        <Card
-          sx={{
-            borderRadius: 3,
-            bgcolor: 'rgba(0, 0, 0, 0.7)',
-            color: 'white',
-            backdropFilter: 'blur(12px)',
-            boxShadow: '0 0 20px rgba(0,0,0,0.8)',
-            px: 3,
-          }}
-        >
-          <CardHeader
-            title="Add New Book"
-            sx={{
-              textAlign: 'center',
-              color: '#307d1aff',
-              fontWeight: 'bold',
-              fontSize: '1.8rem',
-            }}
-          />
+        <Card sx={{
+          borderRadius: 3,
+          bgcolor: 'rgba(0, 0, 0, 0.7)',
+          color: 'white',
+          backdropFilter: 'blur(12px)',
+          boxShadow: '0 0 20px rgba(0,0,0,0.8)',
+          px: 3,
+        }}>
+          <CardHeader title="Add New Book" sx={{ textAlign: 'center', color: '#307d1aff', fontWeight: 'bold', fontSize: '1.8rem' }} />
           <Divider sx={{ borderColor: 'rgba(255,255,255,0.2)', mb: 2 }} />
           <CardContent>
             <form onSubmit={handleSubmit(onSubmit)} encType="multipart/form-data">
               <Grid container spacing={3}>
-                <Grid item xs={12} md={6}>
-                  <TextField
-                    label="Title"
-                    fullWidth
-                    variant="filled"
-                    {...register('title')}
-                    error={!!errors.title}
-                    helperText={errors.title?.message}
-                    InputProps={{ style: { color: 'white' } }}
-                    InputLabelProps={{ style: { color: '#aaa' } }}
-                  />
-                </Grid>
-                <Grid item xs={12} md={6}>
-                  <TextField
-                    label="Author"
-                    fullWidth
-                    variant="filled"
-                    {...register('author')}
-                    error={!!errors.author}
-                    helperText={errors.author?.message}
-                    InputProps={{ style: { color: 'white' } }}
-                    InputLabelProps={{ style: { color: '#aaa' } }}
-                  />
-                </Grid>
-                <Grid item xs={12} md={6}>
-                  <TextField
-                    label="Price"
-                    type="number"
-                    fullWidth
-                    variant="filled"
-                    {...register('price')}
-                    error={!!errors.price}
-                    helperText={errors.price?.message}
-                    InputProps={{ style: { color: 'white' } }}
-                    InputLabelProps={{ style: { color: '#aaa' } }}
-                  />
-                </Grid>
+                {/* Form fields */}
+                {[
+                  { label: 'Title', name: 'title' },
+                  { label: 'Author', name: 'author' },
+                  { label: 'Price', name: 'price', type: 'number' },
+                  { label: 'Rating', name: 'rating', type: 'number', props: { inputProps: { min: 0, max: 5, step: 0.1 } } },
+                  { label: 'Stock', name: 'stock', type: 'number' },
+                ].map((field, index) => (
+                  <Grid item xs={12} md={6} key={index}>
+                    <TextField
+                      label={field.label}
+                      type={field.type || 'text'}
+                      fullWidth
+                      variant="filled"
+                      {...register(field.name as keyof FormValues)}
+                      error={!!errors[field.name as keyof FormValues]}
+                      helperText={errors[field.name as keyof FormValues]?.message}
+                      InputProps={{ style: { color: 'white' }, ...(field.props?.inputProps ? { inputProps: field.props.inputProps } : {}) }}
+                      InputLabelProps={{ style: { color: '#aaa' } }}
+                    />
+                  </Grid>
+                ))}
+
                 <Grid item xs={12} md={6}>
                   <FormControl fullWidth variant="filled" error={!!errors.category}>
                     <InputLabel sx={{ color: '#aaa' }}>Category</InputLabel>
@@ -217,9 +188,7 @@ const AddBookPage = () => {
                       render={({ field }) => (
                         <Select {...field} sx={{ color: 'white' }}>
                           {categories.map((cat) => (
-                            <MenuItem key={cat} value={cat}>
-                              {cat}
-                            </MenuItem>
+                            <MenuItem key={cat} value={cat}>{cat}</MenuItem>
                           ))}
                         </Select>
                       )}
@@ -229,38 +198,11 @@ const AddBookPage = () => {
                     </Typography>
                   </FormControl>
                 </Grid>
-                <Grid item xs={12} md={6}>
-                  <TextField
-                    label="Rating"
-                    type="number"
-                    inputProps={{ min: 0, max: 5, step: 0.1 }}
-                    fullWidth
-                    variant="filled"
-                    {...register('rating')}
-                    error={!!errors.rating}
-                    helperText={errors.rating?.message}
-                    InputProps={{ style: { color: 'white' } }}
-                    InputLabelProps={{ style: { color: '#aaa' } }}
-                  />
-                </Grid>
-                <Grid item xs={12} md={6}>
-                  <TextField
-                    label="Stock"
-                    type="number"
-                    fullWidth
-                    variant="filled"
-                    {...register('stock')}
-                    error={!!errors.stock}
-                    helperText={errors.stock?.message}
-                    InputProps={{ style: { color: 'white' } }}
-                    InputLabelProps={{ style: { color: '#aaa' } }}
-                  />
-                </Grid>
+
                 <Grid item xs={12}>
                   <TextField
                     label="Description"
-                    multiline
-                    rows={3}
+                    multiline rows={3}
                     fullWidth
                     variant="filled"
                     {...register('description')}
@@ -270,27 +212,19 @@ const AddBookPage = () => {
                     InputLabelProps={{ style: { color: '#aaa' } }}
                   />
                 </Grid>
+
                 <Grid item xs={12}>
                   <Button
                     variant="contained"
                     component="label"
                     fullWidth
                     sx={{
-                      bgcolor: '#307d1aff',
-                      color: 'white',
-                      fontWeight: 600,
-                      '&:hover': {
-                        bgcolor: '#1f4d13ff',
-                      },
+                      bgcolor: '#307d1aff', color: 'white', fontWeight: 600,
+                      '&:hover': { bgcolor: '#1f4d13ff' },
                     }}
                   >
                     Upload Book Image
-                    <input
-                      type="file"
-                      hidden
-                      accept="image/*"
-                      onChange={handleImageChange}
-                    />
+                    <input type="file" hidden accept="image/*" onChange={handleImageChange} />
                   </Button>
                   {errors.image && (
                     <Typography variant="caption" color="error">

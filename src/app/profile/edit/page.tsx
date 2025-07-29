@@ -5,6 +5,11 @@ import { useRouter } from 'next/navigation';
 import * as yup from 'yup';
 import api from '@/lib/api';
 
+// ✅ Redux imports
+import { useAppDispatch } from '@/redux/hooks';
+import { editProfile } from '@/redux/slices/userSlice';
+import toast from 'react-hot-toast';
+
 interface User {
   name: string;
   email: string;
@@ -18,21 +23,21 @@ const schema = yup.object({
   image: yup
     .mixed()
     .test('fileType', 'Only image files allowed', (value) => {
-      // Allow: no change (null), existing image URL (string), or new file (File)
       if (!value) return true;
-      if (typeof value === 'string') return true; 
+      if (typeof value === 'string') return true;
       if (value instanceof File) return value.type.startsWith('image/');
       return false;
     }),
 });
-
 
 const EditProfilePage = () => {
   const [form, setForm] = useState<User>({ name: '', email: '', role: '', image: null });
   const [image, setImage] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [errors, setErrors] = useState<{ name?: string; email?: string; image?: string }>({});
+
   const router = useRouter();
+  const dispatch = useAppDispatch(); // ✅ Redux dispatcher
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -50,8 +55,8 @@ const EditProfilePage = () => {
         }
       } catch (err) {
         console.error('Failed to load profile:', err);
-        alert('Failed to load profile');
-          router.push('/unauthorized');
+        toast.error('Failed to load profile');
+        router.push('/unauthorized');
       }
     };
 
@@ -88,20 +93,15 @@ const EditProfilePage = () => {
       await schema.validate(formToValidate, { abortEarly: false });
       setErrors({});
 
-      const token = localStorage.getItem('bookbay_token');
       const formData = new FormData();
       formData.append('name', form.name);
       formData.append('email', form.email);
       if (image) formData.append('image', image);
 
-      await api.patch('/users/editProfile', formData, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'multipart/form-data',
-        },
-      });
+      // ✅ Redux API call
+      await dispatch(editProfile(formData)).unwrap();
 
-      alert('Profile updated successfully');
+      toast.success('Profile updated successfully');
       router.push('/profile');
     } catch (err: any) {
       if (err.name === 'ValidationError') {
@@ -112,7 +112,7 @@ const EditProfilePage = () => {
         setErrors(validationErrors);
       } else {
         console.error('Profile update failed:', err);
-        alert('Profile update failed');
+        toast.error('Profile update failed');
       }
     }
   };

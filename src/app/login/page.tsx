@@ -5,6 +5,9 @@ import { useForm, SubmitHandler } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import api from '@/lib/api';
+import { useDispatch } from 'react-redux';
+import { loginSuccess } from '@/redux/slices/authSlice';
+import toast from 'react-hot-toast';
 
 interface LoginForm {
   email: string;
@@ -18,6 +21,7 @@ const schema = yup.object().shape({
 
 const LoginPage = () => {
   const router = useRouter();
+  const dispatch = useDispatch();
 
   const {
     register,
@@ -29,48 +33,51 @@ const LoginPage = () => {
 
   const onSubmit: SubmitHandler<LoginForm> = async (data) => {
     try {
-      const res = await api.post('/auth/login', data)
-      .then(async (res)=>{
-        const { token, data: userData } = res.data;
+      const res = await api.post('/auth/login', data);
+      const { token, data: userData } = res.data;
 
-        localStorage.setItem('bookbay_token', token);
-        localStorage.setItem('bookbay_user', JSON.stringify(userData));
+      // Save to localStorage
+      localStorage.setItem('bookbay_token', token);
+      localStorage.setItem('bookbay_user', JSON.stringify(userData));
 
-        alert('Login successful!');
+      // Update Redux state
+      dispatch(loginSuccess({ user: userData, token }));
 
-        // Send token and role to server 
-        const cookieRes = await fetch('/api/auth/set-cookies', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token, role: userData.role }),
-        });
+      // Set server cookies
+      const cookieRes = await fetch('/api/auth/set-cookies', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, role: userData.role }),
+      });
 
-        if (!cookieRes.ok) throw new Error('Failed to set cookies');
+      if (!cookieRes.ok) throw new Error('Failed to set cookies');
 
-        if (userData.role === 'seller') {
-          window.location.href = '/seller';
-        } else {
-          window.location.href = '/dashboard';
-        }
-      })
-      .catch((err)=>{
-        console.log(err,"Error")
-      })
+    
+      toast.success('Login successfully!');
+
+      // Navigate based on role
+      if (userData.role === 'seller') {
+        router.push('/seller');
+      } else {
+        router.push('/dashboard');
+      }
+
     } catch (err: any) {
+      console.log(err, 'Login Error');
       const msg = err?.response?.data?.message || err?.message || 'Login failed!';
-      alert(msg);
+      toast.error(msg);
     }
   };
-  
+
   return (
     <div className="relative min-h-screen flex items-center justify-center px-4 overflow-hidden">
-      {/* Background image with opacity */}
+      {/* Background image */}
       <div className="absolute inset-0 z-0">
         <div className="absolute inset-0 bg-[url('/bg5.jpg')] bg-cover bg-center bg-no-repeat"></div>
-        <div className="absolute inset-0 bg-black opacity-60"></div> 
+        <div className="absolute inset-0 bg-black opacity-60"></div>
       </div>
 
-      {/* Form container */}
+      {/* Login Form */}
       <form
         onSubmit={handleSubmit(onSubmit)}
         className="relative z-10 bg-black bg-opacity-20 shadow-xl rounded-2xl p-8 w-full max-w-md space-y-6 text-white"

@@ -2,9 +2,12 @@
 
 import { useState, ChangeEvent, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image'; // ✅ Added for optimized image handling
+import Image from 'next/image';
 import * as yup from 'yup';
 import api from '@/lib/api';
+import { useDispatch } from 'react-redux';
+import { loginSuccess } from '@/redux/slices/authSlice';
+import toast from 'react-hot-toast';
 
 const schema = yup.object().shape({
   name: yup.string().required('Name is required'),
@@ -30,6 +33,7 @@ interface RegisterForm {
 
 const RegisterPage = () => {
   const router = useRouter();
+  const dispatch = useDispatch();
 
   const [form, setForm] = useState<RegisterForm>({
     name: '',
@@ -75,10 +79,15 @@ const RegisterPage = () => {
       .then((res) => {
         const { token, data: user } = res.data;
 
+        // Dispatch to Redux
+        dispatch(loginSuccess({ user, token }));
+
+        // Persist to localStorage
         localStorage.setItem('bookbay_token', token);
         localStorage.setItem('bookbay_user', JSON.stringify(user));
         localStorage.setItem('role', user.role);
 
+        // Set cookies
         return fetch('/api/auth/set-cookies', {
           method: 'POST',
           headers: {
@@ -90,7 +99,7 @@ const RegisterPage = () => {
             throw new Error('Failed to set cookies');
           }
 
-          alert('Registration successful!');
+          toast.success('Registration successful!');
           router.push(user.role === 'seller' ? '/seller' : '/dashboard');
         });
       })
@@ -110,7 +119,7 @@ const RegisterPage = () => {
             err?.response?.data?.error ||
             err?.message ||
             'Registration failed!';
-          alert(message);
+          toast.error(message);
         }
       });
   };

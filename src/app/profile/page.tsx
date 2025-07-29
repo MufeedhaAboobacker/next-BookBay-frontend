@@ -1,45 +1,25 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
+import { useAppDispatch, useAppSelector } from '@/redux/hooks'; // we'll create these next
+import { fetchProfile } from '@/redux/slices/userSlice';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image'; // ✅ Added for optimized image handling
-import api from '@/lib/api';
-
-interface User {
-  name: string;
-  email: string;
-  role: string;
-  image?: string;
-}
+import Image from 'next/image';
 
 const capitalize = (str: string) => str.charAt(0).toUpperCase() + str.slice(1);
 
 const ProfilePage = () => {
-  const [user, setUser] = useState<User | null>(null);
+  const dispatch = useAppDispatch();
   const router = useRouter();
+  const { user, loading, error } = useAppSelector((state) => state.user);
 
   useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const token = localStorage.getItem('bookbay_token');
-        const res = await api.get('/users/viewProfile', {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+    dispatch(fetchProfile());
+  }, [dispatch]);
 
-        setUser(res.data.data);
-      } catch (err) {
-        console.error('Failed to fetch profile:', err);
-        alert('Failed to load profile');
-        // router.push('/unauthorized');
-      }
-    };
-
-    fetchProfile();
-  }, [router]); // ✅ Added 'router' to the dependency array
-
-  if (!user) return <p className="text-center mt-10 text-white">Loading profile...</p>;
+  if (loading) return <p className="text-center mt-10 text-white">Loading profile...</p>;
+  if (error) return <p className="text-center mt-10 text-red-400">{error}</p>;
+  if (!user) return null;
 
   const imageUrl = user.image
     ? `${process.env.NEXT_PUBLIC_BACKEND_URL}${user.image.startsWith('/') ? '' : '/'}${user.image}`
@@ -48,7 +28,6 @@ const ProfilePage = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-[url('/bg5.jpg')] bg-cover bg-center bg-no-repeat relative">
       <div className="absolute inset-0 bg-black opacity-60 z-0"></div>
-
       <div className="relative z-10 max-w-md w-full p-6 bg-white/10 backdrop-blur-md rounded-xl shadow-lg text-white">
         <h1 className="text-3xl font-bold text-center mb-6">Your Profile</h1>
 

@@ -1,9 +1,8 @@
 import '../styles/global.css';
-import BackButton from '@/components/BackButton';
 import type { Metadata } from 'next';
-import ClientLayout from '@/components/ClientLayouts';
 import '@fortawesome/fontawesome-free/css/all.min.css';
-
+import ClientRoot from './ClientRoot';
+import { Toast, Toaster } from 'react-hot-toast';
 
 export const metadata: Metadata = {
   title: 'BookBay',
@@ -17,10 +16,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body>
-        <ClientLayout>
-          <BackButton />
-          <main>{children}</main>
-        </ClientLayout>
+      <Toaster position="top-right" reverseOrder={false} toastOptions={{style: { background: 'black',color: 'white',},}}/>
+      <ClientRoot>{children}</ClientRoot>
       </body>
     </html>
   );
